@@ -7,8 +7,28 @@ use Illuminate\Support\Facades\File;
 
 class options extends Command
 {
-    public $optionElements;
-    public $migrationContent = '<?php
+    private $arguments = [
+        [
+            'label' => 'Facebook',
+            'name' => 'facebook'
+        ],
+        [
+            'label' => 'Twitter',
+            'name' => 'twitter'
+        ],
+        [
+            'label'=>'YouTube',
+            'name'=>'youtube'
+        ],
+        [
+            'label'=>'Email',
+            'name'=>'email'
+        ]
+    ];
+
+    private $StoreOptionRequest;
+
+    private $migrationContent = '<?php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -44,7 +64,7 @@ class CreateOptionsTable extends Migration
     ';
 
 
-    public $modelContent = '<?php
+    private $modelContent = '<?php
 
     namespace App\Models;
 
@@ -59,7 +79,7 @@ class CreateOptionsTable extends Migration
     }
     ';
 
-    public $helperContent = '<?php
+    private $helperContent = '<?php
     namespace App\Helpers {
 
         use App\Models\Option;
@@ -86,7 +106,30 @@ class CreateOptionsTable extends Migration
     }
     ';
 
-    public $OptionControllerContent = '<?php
+    private $OptionControllerContent;
+
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'options:create';
+
+    /**
+     * The console command description.
+     * php artisan options:create kimi çalışdırılır
+     * @var string
+     */
+    protected $description = 'Options created';
+
+    /**
+     * Create a new command instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        $this->OptionControllerContent = '<?php
 
 namespace App\Http\Controllers;
 
@@ -94,9 +137,6 @@ use App\Helpers\Options;
 use App\Models\Option;
 use App\Http\Requests\StoreOptionRequest;
 use App\Http\Requests\UpdateOptionRequest;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\File;
-use Symfony\Component\HttpFoundation\Response;
 
 class OptionController extends Controller
 {
@@ -108,12 +148,7 @@ class OptionController extends Controller
     public function index()
     {
         return view(\'back.pages.options\',[
-            \'unvan\'=>Options::getOption(\'unvan\'),
-            \'tel\'=>Options::getOption(\'tel\'),
-            \'email\'=>Options::getOption(\'email\'),
-            \'facebook\'=>Options::getOption(\'facebook\'),
-            \'instagram\'=>Options::getOption(\'instagram\'),
-            \'youtube\'=>Options::getOption(\'youtube\')
+            '.$this->prepareElements().'
         ]);
     }
 
@@ -135,7 +170,7 @@ class OptionController extends Controller
      */
     public function store(StoreOptionRequest $request)
     {
-        $check_add = Options::getOption(\'tel\') == \'\' ? true : false;
+        $check_add = '.$this->checkForStore().' == \'\' ? true : false;
         foreach ($request->keys() as $key)
         {
             if ($key != \'_token\')
@@ -159,7 +194,7 @@ class OptionController extends Controller
         }
 
         return redirect()->route(\'option.index\');
-    }'.''.'
+    }
 
     /**
      * Display the specified resource.
@@ -208,32 +243,47 @@ class OptionController extends Controller
 }
     ';
 
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'options:create {arguments*}';
+        $this->StoreOptionRequest = '<?php
 
-    /**
-     * The console command description.
-     * php artisan options:create 'label1*name1' 'label2*name2' kimi çalışdırılır
-     * // output : array:2 [
-     *  0 => "label1*name1"
-     *  1 => "label2*name2"
-     *  ]
-     *
-     * @var string
-     */
-    protected $description = 'Options created';
+namespace App\Http\Requests;
 
+use Illuminate\Foundation\Http\FormRequest;
+
+class StoreOptionRequest extends FormRequest
+{
     /**
-     * Create a new command instance.
+     * Determine if the user is authorized to make this request.
      *
-     * @return void
+     * @return bool
      */
-    public function __construct()
+    public function authorize()
     {
+        return true;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array
+     */
+    public function rules()
+    {
+        return [
+            '.$this->prepareStoreOptionRequestRules().'
+        ];
+    }
+
+    public function attributes()
+    {
+        return [
+            '.$this->prepareStoreOptionRequestAttributes().'
+        ];
+    }
+}
+
+
+        ';
+
         parent::__construct();
     }
 
@@ -244,12 +294,12 @@ class OptionController extends Controller
      */
     public function handle()
     {
-
-        $arguments = $this->argument('arguments');
         $this->createFile($this->migrationContent, base_path().'/database/migrations/','2022_03_05_040356_create_options_table.php');
         $this->createFile($this->modelContent, base_path().'/app/Models/','Option.php');
         $this->createFile($this->helperContent, base_path().'/app/Helpers/','Options.php');
-        $this->createFile($this->OptionControllerContent, base_path().'/app/Http/Controllers/','Options.php');
+        $this->createFile($this->OptionControllerContent, base_path().'/app/Http/Controllers/','OptionController.php');
+        $this->createFile($this->StoreOptionRequest, base_path().'/app/Http/Requests/','StoreOptionRequest.php');
+        dd("/database/migrations/2022_03_05_040356_create_options_table.php created \n /app/Models/Option.php created \n /app/Helpers/Options.php created \n /app/Http/Controllers/OptionController.php created \n /app/Http/Requests/StoreOptionRequest.php created");
     }
 
     public function createFile($data, $destinationPath, $file)
@@ -257,5 +307,52 @@ class OptionController extends Controller
         if (!is_dir($destinationPath)) {  mkdir($destinationPath,0777,true);  }
         File::put($destinationPath.$file,$data);
         return response()->download($destinationPath.$file);
+    }
+
+    public function prepareElements()
+    {
+        $output = '';
+        $arguments = $this->arguments;
+        foreach ($arguments as $argument)
+        {
+            $output .= '\''.$argument['name'].'\'=>Options::getOption(\''.$argument['name'].'\'),
+            ';
+        }
+
+        return $output;
+    }
+
+    public function checkForStore()
+    {
+        $output = '';
+        $arguments = $this->arguments;
+        $output .= 'Options::getOption(\''.$arguments[0]['name'].'\')';
+        return $output;
+    }
+
+    public function prepareStoreOptionRequestRules()
+    {
+        $output = '';
+        $arguments = $this->arguments;
+        foreach ($arguments as $argument)
+        {
+            $output .= '\''.$argument['name'].'\'=>\'required|max:255\',
+            ';
+        }
+
+        return $output;
+    }
+
+    public function prepareStoreOptionRequestAttributes()
+    {
+        $output = '';
+        $arguments = $this->arguments;
+        foreach ($arguments as $argument)
+        {
+            $output .= '\''.$argument['name'].'\'=>\''.$argument['label'].'\',
+            ';
+        }
+
+        return $output;
     }
 }

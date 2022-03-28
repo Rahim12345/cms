@@ -6,9 +6,6 @@ use App\Helpers\Options;
 use App\Models\Option;
 use App\Http\Requests\StoreOptionRequest;
 use App\Http\Requests\UpdateOptionRequest;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\File;
-use Symfony\Component\HttpFoundation\Response;
 
 class OptionController extends Controller
 {
@@ -20,12 +17,11 @@ class OptionController extends Controller
     public function index()
     {
         return view('back.pages.options',[
-            'unvan'=>Options::getOption('unvan'),
-            'tel'=>Options::getOption('tel'),
-            'email'=>Options::getOption('email'),
             'facebook'=>Options::getOption('facebook'),
-            'instagram'=>Options::getOption('instagram'),
-            'youtube'=>Options::getOption('youtube')
+            'twitter'=>Options::getOption('twitter'),
+            'youtube'=>Options::getOption('youtube'),
+            'email'=>Options::getOption('email'),
+            
         ]);
     }
 
@@ -47,7 +43,7 @@ class OptionController extends Controller
      */
     public function store(StoreOptionRequest $request)
     {
-        $check_add = Options::getOption('tel') == '' ? true : false;
+        $check_add = Options::getOption('facebook') == '' ? true : false;
         foreach ($request->keys() as $key)
         {
             if ($key != '_token')
