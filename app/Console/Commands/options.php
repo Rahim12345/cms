@@ -23,10 +23,16 @@ class options extends Command
         [
             'label'=>'Email',
             'name'=>'email'
+        ],
+        [
+            'label'=>'Telefon',
+            'name'=>'tel'
         ]
     ];
 
     private $StoreOptionRequest;
+
+    private $optionsBlade;
 
     private $migrationContent = '<?php
 
@@ -129,6 +135,42 @@ class CreateOptionsTable extends Migration
      */
     public function __construct()
     {
+        $this->optionsBlade = '@extends(\'back.layout.master\')
+
+@section(\'meta\')
+
+@endsection
+
+@section(\'title\') Options @endsection
+
+@section(\'css\')
+
+@endsection
+
+@section(\'content\')
+    <div class="page">
+        @include(\'back.includes.menu\')
+
+        <div class="content">
+            <div class="mb-3 col-md-8 offset-md-2">
+                <form action="{{ route(\'option.store\') }}" method="POST">
+                    @csrf
+                    '.$this->prepareOptionsBlade().'
+                    <div class="form-group">
+                        <button class="btn btn-primary float-end" type="submit">Əlavə et</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        @include(\'back.includes.footer\')
+    </div>
+@endsection
+
+@section(\'js\')
+
+@endsection
+
+    ';
         $this->OptionControllerContent = '<?php
 
 namespace App\Http\Controllers;
@@ -299,7 +341,8 @@ class StoreOptionRequest extends FormRequest
         $this->createFile($this->helperContent, base_path().'/app/Helpers/','Options.php');
         $this->createFile($this->OptionControllerContent, base_path().'/app/Http/Controllers/','OptionController.php');
         $this->createFile($this->StoreOptionRequest, base_path().'/app/Http/Requests/','StoreOptionRequest.php');
-        dd("/database/migrations/2022_03_05_040356_create_options_table.php created \n /app/Models/Option.php created \n /app/Helpers/Options.php created \n /app/Http/Controllers/OptionController.php created \n /app/Http/Requests/StoreOptionRequest.php created");
+        $this->createFile($this->optionsBlade, base_path().'/resources/views/back/pages/','options.blade.php');
+        dd("/database/migrations/2022_03_05_040356_create_options_table.php created \n /app/Models/Option.php created \n /app/Helpers/Options.php created \n /app/Http/Controllers/OptionController.php created \n /app/Http/Requests/StoreOptionRequest.php created \n /resources/views/back/pages/options.blade.php");
     }
 
     public function createFile($data, $destinationPath, $file)
@@ -350,6 +393,25 @@ class StoreOptionRequest extends FormRequest
         foreach ($arguments as $argument)
         {
             $output .= '\''.$argument['name'].'\'=>\''.$argument['label'].'\',
+            ';
+        }
+
+        return $output;
+    }
+
+    public function prepareOptionsBlade()
+    {
+        $output = '';
+        $arguments = $this->arguments;
+        foreach ($arguments as $argument)
+        {
+            $output .= '<div class="form-group mb-3">
+                        <label class="form-label" for="'.$argument['name'].'">'.$argument['label'].'</label>
+                        <input type="text" class="form-control @error(\''.$argument['name'].'\') is-invalid  @enderror" id="'.$argument['name'].'" name="'.$argument['name'].'" value="{{ old(\''.$argument['name'].'\',$'.$argument['name'].') }}">
+                        @error(\''.$argument['name'].'\')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
             ';
         }
 

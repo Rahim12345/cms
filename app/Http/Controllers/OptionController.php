@@ -21,6 +21,7 @@ class OptionController extends Controller
             'twitter'=>Options::getOption('twitter'),
             'youtube'=>Options::getOption('youtube'),
             'email'=>Options::getOption('email'),
+            'tel'=>Options::getOption('tel'),
             
         ]);
     }

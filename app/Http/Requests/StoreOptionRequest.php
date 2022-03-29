@@ -28,6 +28,7 @@ class StoreOptionRequest extends FormRequest
             'twitter'=>'required|max:255',
             'youtube'=>'required|max:255',
             'email'=>'required|max:255',
+            'tel'=>'required|max:255',
             
         ];
     }
@@ -39,6 +40,7 @@ class StoreOptionRequest extends FormRequest
             'twitter'=>'Twitter',
             'youtube'=>'YouTube',
             'email'=>'Email',
+            'tel'=>'Telefon',
             
         ];
     }
